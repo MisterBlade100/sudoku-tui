@@ -1,0 +1,108 @@
+use rand::prelude::SliceRandom;
+use std::collections::BTreeSet;
+use ndarray::prelude::*;
+use itertools::Itertools;
+use rand::Rng;
+
+fn main() {
+    let new_game = Sudoku::gen_game(Dificulty::Hard);
+    println!("{:?}\n\n{:?}", new_game.game, new_game.solution);
+}
+
+struct Sudoku {
+    solution: Array2::<u8>,
+    game: Array2::<u8>,
+}
+
+enum Dificulty {
+    Easy,
+    Medium,
+    Hard,
+}
+
+impl Sudoku {
+fn gen_game(dificulty: Dificulty) -> Sudoku {
+
+    fn gen_solution() -> Option<Array2<u8>> {
+        let mut grid = Array2::<u8>::zeros((9, 9));
+    
+        for r in 0..=8 {
+        for c in 0..=8 {
+            let mut exeptions: Vec<u8> = Vec::new();
+    
+            let row_exeptions = grid.row(r).clone();
+            let row_exeptions = row_exeptions.iter().unique();
+    
+            let column_exeptions = grid.column(c).clone();
+            let column_exeptions = column_exeptions.iter().unique();
+    
+            exeptions.extend(row_exeptions);
+            exeptions.extend(column_exeptions);
+    
+            let mut _y0: i32;
+            let mut _y: i32;
+            let mut _x0: i32;
+            let mut _x: i32;
+    
+            match (r, c) {
+                (0..=2, 0..=2) => {_y0 = 0; _y = 3; _x0 = 0; _x = 3;}
+                (0..=2, 3..=5) => {_y0 = 0; _y = 3; _x0 = 3; _x = 6;}
+                (0..=2, 6..=8) => {_y0 = 0; _y = 3; _x0 = 6; _x = 9;}
+    
+                (3..=5, 0..=2) => {_y0 = 3; _y = 6; _x0 = 0; _x = 3;}
+                (3..=5, 3..=5) => {_y0 = 3; _y = 6; _x0 = 3; _x = 6;}
+                (3..=5, 6..=8) => {_y0 = 3; _y = 6; _x0 = 6; _x = 9;}
+    
+                (6..=8, 0..=2) => {_y0 = 6; _y = 9; _x0 = 0; _x = 3;}
+                (6..=8, 3..=5) => {_y0 = 6; _y = 9; _x0 = 3; _x = 6;}
+                (6..=8, 6..=8) => {_y0 = 6; _y = 9; _x0 = 6; _x = 9;}
+                (_, _) => panic!("Couldn't identify the group"),
+            }
+    
+            let group_exeptions = grid.slice(s![_y0.._y, _x0.._x])
+                .iter()
+                .copied()
+                .collect::<Array1<_>>()
+                .clone();
+    
+            let group_exeptions = group_exeptions.iter().unique();
+            exeptions.extend(group_exeptions);
+    
+            let mut base: Vec<u8> = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+            let exeptions = BTreeSet::from_iter(exeptions);
+            base.retain(|e| !exeptions.contains(e));
+    
+            grid[[r, c]] = *base.choose(&mut rand::thread_rng())?
+    
+        }}
+        Some(grid)
+    }
+
+    let mut _solution: Array2::<u8>;
+    loop {
+        match gen_solution() {
+            Some(grid) => {_solution = grid; break;}
+            None => continue,
+        };
+    }
+
+    let mut _game = _solution.clone();
+
+    let missing_squares: u8;
+    match dificulty {
+        Dificulty::Easy => missing_squares = 45,
+        Dificulty::Medium => missing_squares = 54,
+        Dificulty::Hard => missing_squares = 62,
+    }
+    for _i in 0..=missing_squares {
+        let r = rand::thread_rng().gen_range(0..=8);
+        let c = rand::thread_rng().gen_range(0..=8);
+
+        _game[[r, c]] = 0;
+    }
+
+    Sudoku { solution: _solution, game: _game }
+}
+
+}
